@@ -1,0 +1,584 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Calculate your exact age in years, months and days — plus total months, weeks and days. Free, private and accurate.">
+  <meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141830" media="(prefers-color-scheme: dark)">
+  <title>Age Calculator — Calculate Your Exact Age</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234f46e5'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M32 14l3.4 10.2L45.6 27.6l-10.2 3.4L32 41.2l-3.4-10.2-10.2-3.4 10.2-3.4z' fill='white'/%3E%3C/svg%3E">
+  <style>
+    /* ============ Design tokens ============ */
+    :root {
+      color-scheme: light;
+      --a1: #4f46e5;
+      --a2: #8b5cf6;
+      --bg: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 45%, #eff6ff 100%);
+      --card: rgba(255, 255, 255, 0.86);
+      --card-border: rgba(255, 255, 255, 0.8);
+      --text: #0f172a;
+      --muted: #64748b;
+      --label: #334155;
+      --input-bg: #ffffff;
+      --input-border: #dbe2f0;
+      --stat-bg: #f6f7fd;
+      --stat-border: #eceef8;
+      --divider: #e2e8f0;
+      --error-bg: #fef2f2;
+      --error-border: #fecaca;
+      --error-text: #dc2626;
+      --btn2-bg: #ffffff;
+      --btn2-text: #475569;
+      --ring: rgba(79, 70, 229, 0.16);
+      --shadow: 0 24px 70px -18px rgba(79, 70, 229, 0.28);
+      --blob-op: 0.5;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: linear-gradient(135deg, #0b1023 0%, #141033 55%, #0a1838 100%);
+        --card: rgba(23, 27, 52, 0.92);
+        --card-border: rgba(255, 255, 255, 0.08);
+        --text: #eef1fb;
+        --muted: #9aa3c7;
+        --label: #c3c9e3;
+        --input-bg: #10142b;
+        --input-border: #2b3157;
+        --stat-bg: rgba(255, 255, 255, 0.045);
+        --stat-border: rgba(255, 255, 255, 0.07);
+        --divider: #2b3157;
+        --error-bg: rgba(248, 113, 113, 0.12);
+        --error-border: rgba(248, 113, 113, 0.35);
+        --error-text: #fca5a5;
+        --btn2-bg: rgba(255, 255, 255, 0.05);
+        --btn2-text: #c3c9e3;
+        --ring: rgba(139, 92, 246, 0.25);
+        --shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.6);
+        --blob-op: 0.32;
+      }
+    }
+
+    /* ============ Base ============ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      background: var(--bg);
+      background-attachment: fixed;
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      position: relative;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ============ Decorative background ============ */
+    .bg { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
+    .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: var(--blob-op); }
+    .b1 { width: 480px; height: 480px; background: #6366f1; top: -150px; left: -130px; animation: drift 16s ease-in-out infinite alternate; }
+    .b2 { width: 430px; height: 430px; background: #8b5cf6; bottom: -170px; right: -110px; animation: drift2 20s ease-in-out infinite alternate; }
+    .b3 { width: 340px; height: 340px; background: #38bdf8; bottom: -140px; left: -130px; opacity: calc(var(--blob-op) * 0.6); animation: drift 24s ease-in-out infinite alternate-reverse; }
+    @keyframes drift  { to { transform: translate(40px, 34px) scale(1.1); } }
+    @keyframes drift2 { to { transform: translate(-42px, -30px) scale(1.14); } }
+
+    /* ============ Layout ============ */
+    .page { position: relative; z-index: 1; width: 100%; max-width: 560px; display: flex; flex-direction: column; align-items: center; }
+
+    /* ============ Card ============ */
+    .card {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 28px;
+      padding: 38px 36px 34px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px) saturate(1.4);
+      -webkit-backdrop-filter: blur(14px) saturate(1.4);
+      position: relative;
+      animation: cardIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      top: -1px; left: 28px; right: 28px;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--a1), var(--a2), var(--a1));
+      background-size: 200% 100%;
+      animation: shimmer 6s linear infinite;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: none; } }
+    @keyframes fadeUp  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+    /* ============ Header ============ */
+    .head { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+    .badge {
+      flex: 0 0 auto;
+      width: 54px; height: 54px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 16px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--a1), var(--a2));
+      box-shadow: 0 10px 24px -8px rgba(99, 102, 241, 0.6);
+    }
+    .badge svg { width: 26px; height: 26px; }
+    h1 { font-size: clamp(1.65rem, 4.5vw + 0.8rem, 2.05rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+    .sub { color: var(--muted); font-size: 0.98rem; margin-top: 3px; }
+
+    /* ============ Form ============ */
+    .field { margin-bottom: 18px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--label); margin-bottom: 8px; letter-spacing: 0.01em; }
+    input[type="date"] {
+      width: 100%;
+      padding: 13px 14px;
+      font: inherit;
+      font-size: 1rem;
+      color: var(--text);
+      background: var(--input-bg);
+      border: 2px solid var(--input-border);
+      border-radius: 14px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    input[type="date"]:focus { border-color: var(--a1); box-shadow: 0 0 0 4px var(--ring); }
+    input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.65; }
+    input[type="date"].input-error { border-color: #ef4444; }
+    input[type="date"].input-error:focus { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15); }
+    .hint { font-size: 0.78rem; color: var(--muted); margin-top: 7px; }
+
+    /* ============ Error box ============ */
+    .error {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--error-bg);
+      color: var(--error-text);
+      border: 1px solid var(--error-border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 18px;
+      animation: shake 0.4s ease;
+    }
+    .error[hidden] { display: none !important; }
+    .error svg { flex: 0 0 auto; margin-top: 2px; }
+    @keyframes shake {
+      10%, 90% { transform: translateX(-1px); }
+      20%, 80% { transform: translateX(2px); }
+      30%, 50%, 70% { transform: translateX(-3px); }
+      40%, 60% { transform: translateX(3px); }
+    }
+
+    /* ============ Buttons ============ */
+    .actions { display: flex; gap: 12px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font: inherit;
+      font-weight: 700;
+      font-size: 1rem;
+      border-radius: 14px;
+      cursor: pointer;
+      padding: 14px 22px;
+      border: none;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+    .btn:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+    .btn-primary {
+      flex: 1;
+      color: #fff;
+      background: linear-gradient(135deg, var(--a1), var(--a2));
+      box-shadow: 0 10px 22px -8px rgba(99, 102, 241, 0.55);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 30px -8px rgba(99, 102, 241, 0.65); }
+    .btn-primary:active { transform: translateY(0) scale(0.98); }
+    .btn-ghost {
+      flex: 0 0 auto;
+      background: var(--btn2-bg);
+      color: var(--btn2-text);
+      border: 2px solid var(--input-border);
+    }
+    .btn-ghost:hover { transform: translateY(-2px); border-color: var(--a1); color: var(--a1); }
+    .btn-ghost:active { transform: translateY(0) scale(0.98); }
+    .btn svg { width: 18px; height: 18px; }
+
+    /* ============ Result ============ */
+    .result { display: none; margin-top: 28px; padding-top: 26px; border-top: 1px dashed var(--divider); }
+    .result.visible { display: block; animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .result-label {
+      text-align: center;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--a1);
+      margin-bottom: 16px;
+    }
+    .age-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: clamp(14px, 4.5vw, 40px);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .num {
+      display: block;
+      font-size: clamp(2.7rem, 9vw, 3.9rem);
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      background: linear-gradient(135deg, var(--a1), var(--a2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+    .unit { display: block; font-size: 0.92rem; font-weight: 600; color: var(--muted); margin-top: 7px; }
+
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .stat {
+      background: var(--stat-bg);
+      border: 1px solid var(--stat-border);
+      border-radius: 16px;
+      padding: 16px 8px 14px;
+      text-align: center;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .stat:hover { transform: translateY(-3px); border-color: rgba(139, 92, 246, 0.45); }
+    .stat b { display: block; font-size: clamp(1.15rem, 4.5vw, 1.5rem); font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+    .stat span { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 5px; }
+
+    .extra { margin-top: 20px; text-align: center; font-size: 0.9rem; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+    .extra strong { color: var(--text); font-weight: 700; }
+
+    /* ============ Footnote ============ */
+    .footnote { margin-top: 18px; text-align: center; font-size: 0.8rem; color: var(--muted); opacity: 0.9; }
+
+    /* ============ Responsive ============ */
+    @media (max-width: 480px) {
+      body { padding: 20px 12px; }
+      .card { padding: 28px 20px 26px; border-radius: 22px; }
+      .head { gap: 13px; margin-bottom: 22px; }
+      .badge { width: 48px; height: 48px; border-radius: 14px; }
+      .actions { gap: 10px; }
+      .btn { padding: 13px 16px; font-size: 0.95rem; }
+    }
+
+    /* ============ Reduced motion ============ */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg" aria-hidden="true">
+    <span class="blob b1"></span>
+    <span class="blob b2"></span>
+    <span class="blob b3"></span>
+  </div>
+
+  <main class="page">
+    <section class="card" aria-labelledby="page-title">
+
+      <header class="head">
+        <div class="badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 id="page-title">Age Calculator</h1>
+          <p class="sub">Calculate your exact age</p>
+        </div>
+      </header>
+
+      <form id="age-form" novalidate autocomplete="off">
+        <div class="field">
+          <label for="dob">Date of Birth</label>
+          <input type="date" id="dob" name="dob" required>
+        </div>
+
+        <div class="field">
+          <label for="as-of">Calculate Age As Of</label>
+          <input type="date" id="as-of" name="as-of">
+          <p class="hint">Defaults to today — you can pick any past date instead.</p>
+        </div>
+
+        <div class="error" id="error-box" role="alert" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span id="error-text"></span>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/>
+            </svg>
+            Calculate Age
+          </button>
+          <button type="button" id="reset-btn" class="btn btn-ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            </svg>
+            Reset
+          </button>
+        </div>
+      </form>
+
+      <section class="result" id="result" aria-live="polite">
+        <p class="result-label">Your Age</p>
+        <div class="age-row">
+          <div class="age-cell"><span class="num" id="r-years">0</span><span class="unit">years</span></div>
+          <div class="age-cell"><span class="num" id="r-months">0</span><span class="unit">months</span></div>
+          <div class="age-cell"><span class="num" id="r-days">0</span><span class="unit">days</span></div>
+        </div>
+        <div class="stats">
+          <div class="stat"><b id="t-months">0</b><span>Total Months</span></div>
+          <div class="stat"><b id="t-weeks">0</b><span>Total Weeks</span></div>
+          <div class="stat"><b id="t-days">0</b><span>Total Days</span></div>
+        </div>
+        <div class="extra">
+          <p id="born-on"></p>
+          <p id="next-bday"></p>
+        </div>
+      </section>
+
+    </section>
+
+    <p class="footnote">100% private — everything runs locally in your browser.</p>
+  </main>
+
+  <noscript>
+    <p style="position:relative;z-index:2;text-align:center;margin-top:16px;font-weight:600;">
+      This calculator requires JavaScript. Please enable it in your browser.
+    </p>
+  </noscript>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* ---------- Elements ---------- */
+      var form = document.getElementById('age-form');
+      var dobInput = document.getElementById('dob');
+      var asOfInput = document.getElementById('as-of');
+      var errorBox = document.getElementById('error-box');
+      var errorText = document.getElementById('error-text');
+      var resetBtn = document.getElementById('reset-btn');
+      var resultBox = document.getElementById('result');
+      var rYears = document.getElementById('r-years');
+      var rMonths = document.getElementById('r-months');
+      var rDays = document.getElementById('r-days');
+      var tMonths = document.getElementById('t-months');
+      var tWeeks = document.getElementById('t-weeks');
+      var tDays = document.getElementById('t-days');
+      var bornOn = document.getElementById('born-on');
+      var nextBday = document.getElementById('next-bday');
+
+      var fmt = new Intl.NumberFormat('en-US');
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      /* ---------- Date helpers ---------- */
+      function todayMidnight() {
+        var t = new Date();
+        return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+      }
+      function toISOLocal(d) {
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return d.getFullYear() + '-' + m + '-' + day;
+      }
+      function parseLocalDate(str) {
+        var p = String(str).split('-');
+        if (p.length !== 3) return null;
+        var y = Number(p[0]), m = Number(p[1]), d = Number(p[2]);
+        if (!y || !m || !d) return null;
+        var dt = new Date(y, m - 1, d);
+        if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+        return dt;
+      }
+      /* Exact whole-day difference (UTC-based, immune to DST shifts) */
+      function diffDays(a, b) {
+        var ua = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+        var ub = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+        return Math.round((ub - ua) / 86400000);
+      }
+      /* Add n months, clamping the day to the target month's length (handles Jan 31, Feb 29, etc.) */
+      function addMonthsClamped(d, n) {
+        var t = new Date(d.getFullYear(), d.getMonth() + n, 1);
+        var dim = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+        t.setDate(Math.min(d.getDate(), dim));
+        return t;
+      }
+
+      /* ---------- Age math ---------- */
+      function breakdown(dob, asOf) {
+        var months = (asOf.getFullYear() - dob.getFullYear()) * 12 + (asOf.getMonth() - dob.getMonth());
+        while (months > 0 && addMonthsClamped(dob, months) > asOf) months--;
+        while (addMonthsClamped(dob, months + 1) <= asOf) months++;
+        var anchor = addMonthsClamped(dob, months);
+        var days = diffDays(anchor, asOf);
+        return {
+          years: Math.floor(months / 12),
+          months: months % 12,
+          days: days,
+          totalMonths: months
+        };
+      }
+      function birthdayInYear(dob, year) {
+        var dim = new Date(year, dob.getMonth() + 1, 0).getDate();
+        return new Date(year, dob.getMonth(), Math.min(dob.getDate(), dim));
+      }
+      function nextBirthday(dob, asOf) {
+        var b = birthdayInYear(dob, asOf.getFullYear());
+        if (b < asOf) b = birthdayInYear(dob, asOf.getFullYear() + 1);
+        return b;
+      }
+
+      /* ---------- UI helpers ---------- */
+      function showError(msg, input) {
+        errorText.textContent = msg;
+        errorBox.hidden = true;
+        void errorBox.offsetWidth; /* restart the shake animation */
+        errorBox.hidden = false;
+        if (input) input.classList.add('input-error');
+      }
+      function clearError() {
+        errorBox.hidden = true;
+        errorText.textContent = '';
+        dobInput.classList.remove('input-error');
+        asOfInput.classList.remove('input-error');
+      }
+      function animateNumber(el, target, duration) {
+        if (reduceMotion) { el.textContent = fmt.format(target); return; }
+        if (el._raf) cancelAnimationFrame(el._raf);
+        var start = performance.now();
+        var step = function (now) {
+          var t = Math.min((now - start) / duration, 1);
+          var eased = 1 - Math.pow(1 - t, 3);
+          el.textContent = fmt.format(Math.round(target * eased));
+          if (t < 1) { el._raf = requestAnimationFrame(step); }
+          else { el.textContent = fmt.format(target); }
+        };
+        el._raf = requestAnimationFrame(step);
+      }
+
+      function showResult(dob, asOf) {
+        var r = breakdown(dob, asOf);
+        var totalDays = diffDays(dob, asOf);
+        var totalWeeks = Math.floor(totalDays / 7);
+
+        resultBox.classList.remove('visible');
+        void resultBox.offsetWidth;
+        resultBox.classList.add('visible');
+
+        animateNumber(rYears, r.years, 650);
+        animateNumber(rMonths, r.months, 650);
+        animateNumber(rDays, r.days, 650);
+        animateNumber(tMonths, r.totalMonths, 850);
+        animateNumber(tWeeks, totalWeeks, 950);
+        animateNumber(tDays, totalDays, 1100);
+
+        var weekday = dob.toLocaleDateString('en-US', { weekday: 'long' });
+        bornOn.innerHTML = 'You were born on a <strong>' + weekday + '</strong>.';
+
+        var until = diffDays(asOf, nextBirthday(dob, asOf));
+        if (until === 0) {
+          nextBday.innerHTML = '🎉 Happy birthday — your birthday is <strong>today</strong>!';
+        } else if (until === 1) {
+          nextBday.innerHTML = '🎂 Your next birthday is <strong>tomorrow</strong>!';
+        } else {
+          nextBday.innerHTML = '🎂 Your next birthday is in <strong>' + fmt.format(until) + ' days</strong>.';
+        }
+
+        resultBox.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
+      }
+
+      /* ---------- Initialize defaults ---------- */
+      var todayStr = toISOLocal(todayMidnight());
+      asOfInput.value = todayStr;
+      dobInput.max = todayStr;   /* block future dates in the picker */
+      asOfInput.max = todayStr;
+
+      /* ---------- Events ---------- */
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearError();
+
+        var dobVal = dobInput.value;
+        var asOfVal = asOfInput.value;
+
+        if (!dobVal) {
+          showError('Please enter your date of birth.', dobInput);
+          return;
+        }
+        var dob = parseLocalDate(dobVal);
+        if (!dob) {
+          showError('Please enter a valid date of birth.', dobInput);
+          return;
+        }
+        var asOf;
+        if (!asOfVal) {
+          asOf = todayMidnight();
+          asOfInput.value = toISOLocal(asOf); /* fall back to today silently */
+        } else {
+          asOf = parseLocalDate(asOfVal);
+          if (!asOf) {
+            showError('Please enter a valid "as of" date.', asOfInput);
+            return;
+          }
+        }
+        var today = todayMidnight();
+        if (dob.getTime() > today.getTime()) {
+          showError('Date of birth cannot be in the future.', dobInput);
+          return;
+        }
+        if (asOf.getTime() > today.getTime()) {
+          showError('The "as of" date cannot be in the future.', asOfInput);
+          return;
+        }
+        if (dob.getTime() > asOf.getTime()) {
+          showError('Date of birth must be on or before the "as of" date.', dobInput);
+          return;
+        }
+        showResult(dob, asOf);
+      });
+
+      resetBtn.addEventListener('click', function () {
+        clearError();
+        dobInput.value = '';
+        asOfInput.value = toISOLocal(todayMidnight());
+        resultBox.classList.remove('visible');
+        dobInput.focus();
+      });
+
+      dobInput.addEventListener('input', clearError);
+      asOfInput.addEventListener('input', clearError);
+    })();
+  </script>
+</body>
+</html>
+```
